@@ -81,6 +81,7 @@ do
 	# Reset on every attempt two values to check if touch and display are ok at the same time
         DISPLAYOK=false
 	TOUCHOK=false
+	MOUSEOK=false
 
 	# If i'm calling script from a service i must look for required variables
 	if [ "$SERVICE" = true ] ; then
@@ -103,7 +104,9 @@ do
 	SEARCH="Goodix Capacitive TouchScreen"
 
 	id=$(xinput list --id-only pointer:"Goodix Capacitive TouchScreen")
+	mouseid=$(xinput list --id-only pointer:"SINO WEALTH Gaming Keyboard Mouse")
 	currentmatrix=$(echo -e $(xinput list-props $id | grep 'Coordinate Transformation Matrix' | cut -d ':' -f2))
+	currentmousematrix=$(echo -e $(xinput list-props $mouseid | grep 'Coordinate Transformation Matrix' | cut -d ':' -f2))
 	#echo "Current matrix: $currentmatrix"
 	
 	if [[ "$PORTRAIT" = true ]]; then
@@ -119,6 +122,14 @@ do
 			echo "Touch already rotated."
 			TOUCHOK=true
 		fi
+		if [ "$currentmousematrix" != "0.000000, -1.000000, 1.000000, 1.000000, 0.000000, 0.000000, 0.000000, 0.000000, 1.000000" ]; then
+			# Rotate 90 degrees couter clock-wise
+			xinput set-prop $mouseid "Coordinate Transformation Matrix" 0 -1 1 1 0 0 0 0 1
+			currentmousematrix=$(echo -e $(xinput list-props $mouseid | grep 'Coordinate Transformation Matrix' | cut -d ':' -f2))
+		else
+			echo "Mouse already rotated."
+			MOUSEOK=true
+		fi
 	elif [[ "$INVERTEDPORTRAIT" = true ]]; then
 		if [ "$currentmatrix" != "-1.000000, 0.000000, 1.000000, 0.000000, -1.000000, 1.000000, 0.000000, 0.000000, 1.000000" ]; then
 			# Fix the transformation matrix		
@@ -132,6 +143,14 @@ do
 			echo "Touch already rotated."
 			TOUCHOK=true
 		fi
+		if [ "$currentmousematrix" != "0.000000, 1.000000, 0.000000, -1.000000, 0.000000, 1.000000, 0.000000, 0.000000, 1.000000" ]; then
+			# Rotate 90 degrees clock-wise
+			xinput set-prop $mouseid "Coordinate Transformation Matrix" 0 1 0 -1 0 1 0 0 1
+			currentmousematrix=$(echo -e $(xinput list-props $mouseid | grep 'Coordinate Transformation Matrix' | cut -d ':' -f2))
+		else
+			echo "Mouse already rotated."
+			MOUSEOK=true
+		fi
 	else
 		if [ "$currentmatrix" != "0.000000, 1.000000, 0.000000, -1.000000, 0.000000, 1.000000, 0.000000, 0.000000, 1.000000" ]; then
 			xinput set-prop $id "Coordinate Transformation Matrix" 0 1 0 -1 0 1 0 0 1
@@ -143,6 +162,14 @@ do
 		else
 			echo "Touch already rotated."
 			TOUCHOK=true
+		fi
+		if [ "$currentmousematrix" != "1.000000, 0.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000, 1.000000" ]; then
+			xinput set-prop $mouseid "Coordinate Transformation Matrix" 1 0 0 0 1 0 0 0 1
+			currentmousematrix=$(echo -e $(xinput list-props $mouseid | grep 'Coordinate Transformation Matrix' | cut -d ':' -f2))
+			#echo "Done. Current matrix: $currentmatrix"
+		else
+			echo "Mouse already rotated."
+			MOUSEOK=true
 		fi
 	fi
 
@@ -201,8 +228,8 @@ do
 			DISPLAYOK=true
 		fi
 	fi
-	
-	if [[ "$TOUCHOK" = true && "$DISPLAYOK" = true ]]; then
+
+	if [[ "$TOUCHOK" = true && "$DISPLAYOK" = true && "$MOUSEOK" = true ]]; then
 		# We are done
 		echo "Display and touch correctly rotated! Exit."
 		exit 0;
